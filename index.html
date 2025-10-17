@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Reservations</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; max-width: 640px; margin: 3rem auto; padding: 0 1rem; }
+    h1 { margin-bottom: 0.5rem; }
+    form { display:flex; gap:.5rem; margin:1rem 0 1.5rem; }
+    input, button { font-size: 1rem; padding:.6rem .8rem; }
+    button { cursor:pointer; }
+    ul { list-style: none; padding:0; margin:0; border:1px solid #eee; border-radius:.5rem; }
+    li { padding:.7rem .9rem; border-bottom:1px solid #eee; }
+    li:last-child { border-bottom:0; }
+    .note { color:#666; font-size:.95rem; }
+  </style>
+</head>
+<body>
+  <h1>Reservation List</h1>
+  <p class="note">This form records to <strong>Netlify Forms</strong> and also updates a <strong>shared list</strong> via Netlify Blobs.</p>
+
+  <!-- Netlify Forms: detected at build time -->
+  <form id="resForm" name="reservations" method="POST" netlify>
+    <!-- Required for AJAX submissions -->
+    <input type="hidden" name="form-name" value="reservations" />
+    <input type="text" name="name" id="name" placeholder="Enter your name" required />
+    <button type="submit">Add</button>
+  </form>
+
+  <ul id="list"></ul>
+
+  <script>
+    const listEl = document.getElementById('list');
+    const form = document.getElementById('resForm');
+
+    // Render the shared list from the serverless function (Blobs)
+    async function loadList() {
+      const res = await fetch('/.netlify/functions/reservations');
+      if (!res.ok) return;
+      const data = await res.json();
+      listEl.innerHTML = '';
+      (data.names || []).forEach(n => {
+        const li = document.createElement('li');
+        li.textContent = n;
+        listEl.appendChild(li);
+      });
+    }
+
+    // Helper to URL-encode form data (for Netlify Forms AJAX)
+    function encodeForm(data) {
+      return new URLSearchParams(data).toString();
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('name').value.trim();
+      if (!name) return;
+
+      // 1) Submit to Netlify Forms (so it appears in the Forms dashboard)
+      //    POST to "/" with form-name and fields, urlencoded (per docs)
+      //    (Works once deployed on Netlify.)
+      const formData = { 'form-name': 'reservations', name };
+      await fetch('/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: encodeForm(formData)
+      });
+
+      // 2) Also persist to the shared list in Netlify Blobs
+      await fetch('/.netlify/functions/reservations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+
+      // 3) Refresh the displayed list
+      document.getElementById('name').value = '';
+      await loadList();
+    });
+
+    loadList();
+  </script>
+</body>
+</html>
