@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Reservations</title>
+  <title>Lost in An ALgorithm Reservation Sign Up</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
     body { font-family: system-ui, Arial, sans-serif; max-width: 640px; margin: 3rem auto; padding: 0 1rem; }
@@ -14,11 +14,66 @@
     li { padding:.7rem .9rem; border-bottom:1px solid #eee; }
     li:last-child { border-bottom:0; }
     .note { color:#666; font-size:.95rem; }
+    .event-image { width: 100%; max-width: 640px; height: auto; border-radius: 0.5rem; margin-bottom: 1.5rem; }
+    
+    /* Success notification toast */
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 1rem 1.5rem;
+      border-radius: 0.5rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      opacity: 0;
+      transform: translateY(-20px);
+      transition: all 0.3s ease;
+      pointer-events: none;
+      z-index: 1000;
+      max-width: 400px;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+    .toast-icon {
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+    .toast-content {
+      flex: 1;
+    }
+    .toast-title {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+    .toast-message {
+      font-size: 0.9rem;
+      opacity: 0.95;
+    }
+    @media (max-width: 640px) {
+      .toast {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+      }
+    }
   </style>
 </head>
 <body>
-  <h1>Reservation List</h1>
-  <p class="note">This form records to <strong>Netlify Forms</strong> and also updates a <strong>shared list</strong> via Netlify Blobs.</p>
+
+  
+  <h1>Lost in An Algorithm </h1>
+  <h2>Reservation Sign Up</h2>
+  <p class="note"><strong>Lost in the Algorithm</strong> — Meetup & Mini-Workshop<br>
+  Sunday, October 19, 2025 • 2:30–4:30 PM PT<br>
+  PVNET - Promenade PV Mall (550 Deep Valley Dr., Ste #229 Rolling Hills Estates, CA 90274)</p>
 
   <!-- Netlify Forms: detected at build time -->
   <form id="resForm" name="reservations" method="POST" netlify>
@@ -30,9 +85,29 @@
 
   <ul id="list"></ul>
 
+  <!-- Success notification toast -->
+  <div id="successToast" class="toast">
+    <div class="toast-icon">✓</div>
+    <div class="toast-content">
+      <div class="toast-title">Reservation Confirmed!</div>
+      <div class="toast-message">See you at Lost in the Algorithm on Oct 19 • 2:30 PM PT</div>
+    </div>
+  </div>
+  <img src="images/lostinalgo.png" alt="Lost in the Algorithm Event" class="event-image">
   <script>
     const listEl = document.getElementById('list');
     const form = document.getElementById('resForm');
+
+    // Show success notification
+    function showSuccessNotification(name) {
+      const toast = document.getElementById('successToast');
+      toast.classList.add('show');
+      
+      // Hide after 5 seconds
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 5000);
+    }
 
     // Render the shared list from the serverless function (Blobs)
     async function loadList() {
@@ -68,7 +143,7 @@
       });
 
       // 2) Also persist to the shared list in Netlify Blobs
-      await fetch('/.netlify/functions/reservations', {
+      const blobRes = await fetch('/.netlify/functions/reservations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name })
@@ -77,16 +152,21 @@
       // 3) Refresh the displayed list
       document.getElementById('name').value = '';
       await loadList();
+      
+      // 4) Show success notification
+      if (blobRes.ok) {
+        showSuccessNotification(name);
+      }
     });
 
     loadList();
   </script>
 
   <!-- Hidden static form so Netlify definitely detects "reservations" -->
-<form name="reservations" data-netlify="true" netlify-honeypot="bot-field" hidden>
+<!-- <form name="reservations" data-netlify="true" netlify-honeypot="bot-field" hidden>
   <input type="text" name="name" />
   <input type="hidden" name="form-name" value="reservations" />
   <input type="text" name="bot-field" />
-</form>
+</form> -->
 </body>
 </html>
