@@ -81,5 +81,12 @@
 
     loadList();
   </script>
+
+  <!-- Hidden static form so Netlify definitely detects "reservations" -->
+<form name="reservations" data-netlify="true" netlify-honeypot="bot-field" hidden>
+  <input type="text" name="name" />
+  <input type="hidden" name="form-name" value="reservations" />
+  <input type="text" name="bot-field" />
+</form>
 </body>
 </html>
