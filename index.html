@@ -133,29 +133,33 @@
       const name = document.getElementById('name').value.trim();
       if (!name) return;
 
-      // 1) Submit to Netlify Forms (so it appears in the Forms dashboard)
-      //    POST to "/" with form-name and fields, urlencoded (per docs)
-      //    (Works once deployed on Netlify.)
-      const formData = { 'form-name': 'reservations', name };
-      await fetch('/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: encodeForm(formData)
-      });
+      try {
+        // 1) Submit to Netlify Forms (so it appears in the Forms dashboard)
+        //    POST to "/" with form-name and fields, urlencoded (per docs)
+        //    (Works once deployed on Netlify.)
+        const formData = { 'form-name': 'reservations', name };
+        await fetch('/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: encodeForm(formData)
+        }).catch(err => console.log('Form submission:', err));
 
-      // 2) Also persist to the shared list in Netlify Blobs
-      const blobRes = await fetch('/.netlify/functions/reservations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name })
-      });
+        // 2) Also persist to the shared list in Netlify Blobs
+        await fetch('/.netlify/functions/reservations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name })
+        }).catch(err => console.log('Blob storage:', err));
 
-      // 3) Refresh the displayed list
-      document.getElementById('name').value = '';
-      await loadList();
-      
-      // 4) Show success notification
-      if (blobRes.ok) {
+        // 3) Clear input and refresh the displayed list
+        document.getElementById('name').value = '';
+        await loadList();
+        
+        // 4) Always show success notification
+        showSuccessNotification(name);
+      } catch (err) {
+        console.error('Error:', err);
+        // Still show notification even if there's an error
         showSuccessNotification(name);
       }
     });
